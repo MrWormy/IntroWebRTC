@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WebRTC</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="messaging">
+    <video id="local_video" width="300" height="150" autoplay muted></video>
+    <video id="received_video" width="300" height="150" autoplay></video>
+    <br>
+    <div id="chat"></div>
+    <form id="chat_input">
+        <input title="message to send" type="text" name="message" id="send_message">
+        <button type="submit">Envoyer</button>
+    </form>
+</div>
+<script src="index.js"></script>
+</body>
+</html>
