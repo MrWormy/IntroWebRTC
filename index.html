@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<button id="start_session">Start P2P session</button>
 <div id="messaging">
     <video id="local_video" width="300" height="150" autoplay muted></video>
     <video id="received_video" width="300" height="150" autoplay></video>
@@ -15,6 +16,12 @@
         <input title="message to send" type="text" name="message" id="send_message">
         <button type="submit">Envoyer</button>
     </form>
+</div>
+<div id="settings">
+    <input id="info" title="info" readonly>
+    <button id="copy">Copy</button>
+    <br>
+    <input id="answer" type="text" title="answer">
 </div>
 <script src="index.js"></script>
 </body>

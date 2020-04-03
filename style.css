@@ -3,3 +3,16 @@
     width: 300px;
     border: 1px solid black;
 }
+
+#info {
+    width: 500px;
+    overflow-x: auto;
+}
+
+#start_session {
+    visibility: hidden;
+}
+
+#answer {
+    visibility: hidden;
+}

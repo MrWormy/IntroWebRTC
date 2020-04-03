@@ -1,7 +1,11 @@
+const start = document.getElementById('start_session');
+const info = document.getElementById('info');
+const answer = document.getElementById('answer');
+let infoSent = false;
 let connection;
 let channel;
 
-async function createRTCConnexion() {
+async function createRTCConnexion(addCandCb) {
     const pc = new RTCPeerConnection({
         iceServers: [
             {urls: "stun:stun.l.google.com:19302"},
@@ -29,62 +33,123 @@ async function createRTCConnexion() {
     };
 
     pc.onicecandidate = (e) => {
-        console.log(e.candidate);
-        console.log(btoa(JSON.stringify(e.candidate)));
+        if (addCandCb) {
+            addCandCb(e.candidate);
+        }
     };
 
     pc.ontrack = (e) => {
         document.getElementById("received_video").srcObject = e.streams[0];
     };
 
-    return pc
+    return pc;
 }
 
 async function initiateConnection() {
+    let conInfo = {
+        offer: null,
+        candidates: []
+    };
+    let addCandCb = candidate => {
+        if (!infoSent) {
+            if (candidate === null && conInfo.offer !== null) {
+                infoSent = true;
+                console.log(conInfo);
+                info.value = `${location.origin}${location.pathname}#${btoa(JSON.stringify(conInfo))}`
+            } else if (candidate instanceof RTCIceCandidate) {
+                conInfo.candidates.push(candidate);
+            }
+        }
+    };
+
     if (!(connection instanceof RTCPeerConnection)) {
-        connection = await createRTCConnexion();
+        connection = await createRTCConnexion(addCandCb);
     }
 
     connection.createOffer().then((offer) => {
-        console.log(offer);
         return connection.setLocalDescription(offer);
     })
     .then(() => {
-        console.log(btoa(JSON.stringify(connection.localDescription.toJSON())));
+        conInfo.offer = connection.localDescription;
+        setTimeout(() => addCandCb(null), 6000);
     })
-    .catch(e => console.log(e))
+    .catch(e => console.log(e));
 }
 
 async function acceptConnection(message) {
+    let conInfo = {
+        answer: null,
+        candidates: []
+    };
+    let addCandCb = candidate => {
+        if (!infoSent) {
+            if (candidate === null && conInfo.answer !== null) {
+                infoSent = true;
+                console.log(conInfo);
+                info.value = `${btoa(JSON.stringify(conInfo))}`
+            } else if (candidate instanceof RTCIceCandidate) {
+                conInfo.candidates.push(candidate);
+            }
+        }
+    };
+
     if (!(connection instanceof RTCPeerConnection)) {
-        connection = await createRTCConnexion();
+        connection = await createRTCConnexion(addCandCb);
     }
 
-    const desc = new RTCSessionDescription(JSON.parse(atob(message)));
+    const desc = new RTCSessionDescription(message);
 
     connection.setRemoteDescription(desc)
     .then(() => {
         return connection.createAnswer();
     })
     .then((answer) => {
-        console.log(answer);
         return connection.setLocalDescription(answer);
     })
     .then(() => {
-        console.log(btoa(JSON.stringify(connection.localDescription.toJSON())));
+        conInfo.answer = connection.localDescription;
     })
     .catch(e => console.log(e))
 }
 
 function acceptAnswer(message) {
-    const desc = new RTCSessionDescription(JSON.parse(atob(message)));
+    const infos = JSON.parse(atob(message));
 
-    connection.setRemoteDescription(desc)
+    connection.setRemoteDescription(infos.answer)
         .then(() => {
+            infos.candidates.forEach(addCandidate);
         })
         .catch(e => console.log(e))
 }
 
+async function initPeerClient() {
+    const info = JSON.parse(atob(location.hash.slice(1)));
+
+    await acceptConnection(info.offer);
+    info.candidates.forEach(addCandidate);
+}
+
 function addCandidate(candidate) {
-    connection.addIceCandidate(JSON.parse(atob(candidate))).catch(e => console.log(e))
+    connection.addIceCandidate(candidate).catch(e => console.log(e))
+}
+
+document.getElementById('copy').addEventListener('click', () => {
+    info.select();
+    document.execCommand('copy');
+});
+
+if (location.hash.length === 0) {
+    start.style.visibility = 'visible';
+    answer.style.visibility = 'visible';
+    start.addEventListener('click', () => {
+        infoSent = false;
+        info.value = 'peer connection initialisation...';
+        initiateConnection();
+    }, false);
+    answer.addEventListener('change', () => {
+        acceptAnswer(answer.value);
+    }, false)
+} else {
+    info.value = 'peer connection initialisation...';
+    initPeerClient();
 }
